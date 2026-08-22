@@ -3,6 +3,7 @@
     "name": "KisanOps / Yukti",
     "slug": "kisanops-yukti",
     "version": "1.0.0",
+    "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -50,6 +51,9 @@
       ]
     ],
     "scheme": "kisanops",
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

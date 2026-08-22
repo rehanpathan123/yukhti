@@ -23,46 +23,46 @@ export default function CHCDemandScreen() {
         </View>
 
         {/* Village Demand Clusters */}
-        <Text style={styles.sectionHeader}>Village Cluster Forecasts</Text>
+        <Text style={styles.sectionHeader}>District Demand Forecasts</Text>
         {state.demandForecasts.map(forecast => {
-          const isHigh = forecast.demandSurgeProbabilityPercent >= 75;
+          const isHigh = forecast.demandLevel === 'HIGH' || forecast.demandLevel === 'VERY_HIGH';
 
           return (
             <View key={forecast.id} style={styles.clusterCard}>
               <View style={styles.clusterHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <MapPin color="#1b4d3e" size={16} />
-                  <Text style={styles.clusterVillage}>{forecast.villageCluster}, {forecast.district}</Text>
+                  <Text style={styles.clusterVillage}>{forecast.district} • {forecast.machineCategory}</Text>
                 </View>
                 <View style={[styles.surgeBadge, { backgroundColor: isHigh ? '#fee2e2' : '#fef3c7' }]}>
                   <Zap size={12} color={isHigh ? '#dc2626' : '#d97706'} />
                   <Text style={[styles.surgeText, { color: isHigh ? '#dc2626' : '#d97706' }]}>
-                    {forecast.demandSurgeProbabilityPercent}% Surge Risk
+                    {forecast.demandLevel} Demand ({forecast.demandIndex}%)
                   </Text>
                 </View>
               </View>
 
               <View style={styles.clusterMetrics}>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Primary Crop</Text>
+                  <Text style={styles.metricLabel}>Crop Context</Text>
                   <Text style={styles.metricVal}>{forecast.cropName} ({forecast.cropStage})</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Total Acreage</Text>
-                  <Text style={styles.metricVal}>{forecast.totalAcreage} Acres</Text>
+                  <Text style={styles.metricLabel}>Expected Units</Text>
+                  <Text style={styles.metricVal}>{forecast.expectedDemandUnits} Units</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Required Fleet</Text>
-                  <Text style={[styles.metricVal, { color: '#1b4d3e' }]}>
-                    {forecast.recommendedMachineCount} Harvesters
+                  <Text style={styles.metricLabel}>Hub Shortage</Text>
+                  <Text style={[styles.metricVal, { color: forecast.shortageUnits > 0 ? '#dc2626' : '#10b981' }]}>
+                    {forecast.shortageUnits > 0 ? `-${forecast.shortageUnits} Units` : 'Balanced'}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.windowBox}>
-                <Text style={styles.windowLabel}>Optimal Harvesting Window</Text>
+                <Text style={styles.windowLabel}>AI Confidence</Text>
                 <Text style={styles.windowVal}>
-                  {new Date(forecast.predictedOptimalStart).toLocaleDateString()} - {new Date(forecast.predictedOptimalEnd).toLocaleDateString()}
+                  {(forecast.confidenceScore * 100).toFixed(0)}% Model Confidence
                 </Text>
               </View>
             </View>
@@ -74,14 +74,18 @@ export default function CHCDemandScreen() {
         {state.allocations.map(rec => (
           <View key={rec.id} style={styles.recCard}>
             <View style={styles.recHeader}>
-              <Text style={styles.recMachine}>{rec.machineCategory} Reallocation</Text>
+              <Text style={styles.recMachine}>{rec.category} ({rec.machineModel})</Text>
               <View style={styles.confidenceBadge}>
-                <Text style={styles.confidenceText}>{(rec.confidenceScore * 100).toFixed(0)}% Confidence</Text>
+                <Text style={styles.confidenceText}>{rec.status}</Text>
               </View>
             </View>
-            <Text style={styles.recReason}>{rec.rationale}</Text>
+            <Text style={styles.recReason}>
+              Relocate from {rec.sourceChcName} ({rec.sourceDistrict}) to {rec.targetChcName} ({rec.targetDistrict}) • {rec.distanceKm} km transit.
+            </Text>
             <View style={styles.recFooter}>
-              <Text style={styles.recRevenue}>Estimated Uplift: <Text style={{ color: '#10b981', fontWeight: '800' }}>+₹{rec.expectedRevenueBoost}</Text></Text>
+              <Text style={styles.recRevenue}>
+                Expected Revenue Gain: <Text style={{ color: '#10b981', fontWeight: '800' }}>+₹{rec.estimatedRevenueGain.toLocaleString('en-IN')}</Text>
+              </Text>
             </View>
           </View>
         ))}

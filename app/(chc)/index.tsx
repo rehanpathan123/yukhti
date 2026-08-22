@@ -29,8 +29,8 @@ export default function CHCOverviewScreen() {
   };
 
   const totalMachines = state.machines.length;
-  const activeMachines = state.machines.filter(m => m.status === 'ACTIVE' || m.status === 'IN_USE').length;
-  const pendingBookings = state.bookings.filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED').length;
+  const activeMachines = state.machines.filter(m => m.status === 'ACTIVE' || m.status === 'DISPATCHED').length;
+  const pendingBookings = state.bookings.filter(b => b.status === 'REQUESTED' || b.status === 'CONFIRMED').length;
   const inProgressBookings = state.bookings.filter(b => b.status === 'DISPATCHED' || b.status === 'IN_PROGRESS');
   const highSeverityAlerts = state.maintenanceAlerts.filter(a => a.severity === 'HIGH' && !a.isResolved);
 

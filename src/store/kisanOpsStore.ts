@@ -842,6 +842,29 @@ export function useKisanOpsStore() {
       notify();
     },
 
+    logoutUser: () => {
+      globalState = {
+        ...globalState,
+        currentUser: {
+          id: '',
+          fullName: '',
+          phoneNumber: '',
+          role: 'FARMER',
+          district: '',
+          village: '',
+        },
+        selectedRole: 'FARMER',
+      };
+      notify();
+    },
+
+    updateMachineStatus: (machineId: string, status: MachineStatus) => {
+      globalState.machines = globalState.machines.map(m =>
+        m.id === machineId ? { ...m, status } : m
+      );
+      notify();
+    },
+
     markNotificationRead: (notifId: string) => {
       globalState.notifications = globalState.notifications.map(n =>
         n.id === notifId ? { ...n, isRead: true } : n

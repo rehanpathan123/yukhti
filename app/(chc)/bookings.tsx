@@ -6,11 +6,11 @@ import { BookingStatus } from '../../src/types';
 
 export default function CHCBookingsScreen() {
   const { state, updateBookingStatus } = useKisanOpsStore();
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'ACTIVE' | 'COMPLETED'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'REQUESTED' | 'ACTIVE' | 'COMPLETED'>('ALL');
 
   const filteredBookings = state.bookings.filter(b => {
     if (filter === 'ALL') return true;
-    if (filter === 'PENDING') return b.status === 'PENDING' || b.status === 'CONFIRMED';
+    if (filter === 'REQUESTED') return b.status === 'REQUESTED' || b.status === 'CONFIRMED';
     if (filter === 'ACTIVE') return b.status === 'DISPATCHED' || b.status === 'IN_PROGRESS';
     return b.status === 'COMPLETED' || b.status === 'CANCELLED';
   });
@@ -25,7 +25,7 @@ export default function CHCBookingsScreen() {
       <View style={styles.responsiveWrapper}>
         {/* Filter Pills */}
         <View style={styles.filterRow}>
-          {(['ALL', 'PENDING', 'ACTIVE', 'COMPLETED'] as const).map(tab => (
+          {(['ALL', 'REQUESTED', 'ACTIVE', 'COMPLETED'] as const).map(tab => (
             <TouchableOpacity
               key={tab}
               style={[styles.filterPill, filter === tab && styles.filterPillActive]}
@@ -96,7 +96,7 @@ export default function CHCBookingsScreen() {
 
                 {/* Action Buttons based on status */}
                 <View style={styles.actionRow}>
-                  {booking.status === 'PENDING' && (
+                  {booking.status === 'REQUESTED' && (
                     <TouchableOpacity
                       style={[styles.btn, { backgroundColor: '#1b4d3e' }]}
                       onPress={() => handleAction(booking.id, 'CONFIRMED', 'Confirmed')}

@@ -139,25 +139,25 @@ export default function OperatorCockpitScreen() {
         <View style={styles.hudGrid}>
           <View style={styles.hudCard}>
             <Gauge color="#1b4d3e" size={20} />
-            <Text style={styles.hudValue}>{telemetry.engineRpm || 1950} RPM</Text>
+            <Text style={styles.hudValue}>{telemetry?.rpm || 1950} RPM</Text>
             <Text style={styles.hudLabel}>Engine Speed</Text>
           </View>
 
           <View style={styles.hudCard}>
             <Flame color="#ea580c" size={20} />
-            <Text style={styles.hudValue}>{telemetry.coolantTempCelsius || 86}°C</Text>
+            <Text style={styles.hudValue}>{telemetry?.engineTemperatureC || 86}°C</Text>
             <Text style={styles.hudLabel}>Coolant Temp</Text>
           </View>
 
           <View style={styles.hudCard}>
             <Fuel color="#0284c7" size={20} />
-            <Text style={styles.hudValue}>{telemetry.fuelLevelLitres || 78} L</Text>
-            <Text style={styles.hudLabel}>Diesel Remaining</Text>
+            <Text style={styles.hudValue}>{telemetry?.fuelLevelPercent || 78}%</Text>
+            <Text style={styles.hudLabel}>Diesel Level</Text>
           </View>
 
           <View style={styles.hudCard}>
             <Clock color="#7c3aed" size={20} />
-            <Text style={styles.hudValue}>{telemetry.engineHours || 412.8} h</Text>
+            <Text style={styles.hudValue}>{telemetry?.engineHours || 412.8} h</Text>
             <Text style={styles.hudLabel}>Total Operating Time</Text>
           </View>
         </View>

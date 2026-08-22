@@ -6,15 +6,15 @@ import { MachineStatus } from '../../src/types';
 
 export default function CHCFleetScreen() {
   const { state, updateMachineStatus } = useKisanOpsStore();
-  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'IDLE' | 'MAINTENANCE'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'AVAILABLE' | 'MAINTENANCE'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredMachines = state.machines.filter(m => {
     const matchesFilter = 
       filter === 'ALL' ? true :
-      filter === 'ACTIVE' ? (m.status === 'ACTIVE' || m.status === 'IN_USE') :
-      filter === 'IDLE' ? m.status === 'IDLE' :
-      (m.status === 'MAINTENANCE' || m.status === 'BREAKDOWN');
+      filter === 'ACTIVE' ? (m.status === 'ACTIVE' || m.status === 'DISPATCHED') :
+      filter === 'AVAILABLE' ? m.status === 'AVAILABLE' :
+      (m.status === 'MAINTENANCE' || m.status === 'OFFLINE');
 
     const matchesSearch = 
       m.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -26,7 +26,7 @@ export default function CHCFleetScreen() {
   });
 
   const handleToggleMaintenance = (machineId: string, currentStatus: MachineStatus) => {
-    const nextStatus: MachineStatus = currentStatus === 'MAINTENANCE' ? 'IDLE' : 'MAINTENANCE';
+    const nextStatus: MachineStatus = currentStatus === 'MAINTENANCE' ? 'AVAILABLE' : 'MAINTENANCE';
     updateMachineStatus(machineId, nextStatus);
   };
 
@@ -46,7 +46,7 @@ export default function CHCFleetScreen() {
 
         {/* Filter Pills */}
         <View style={styles.filterRow}>
-          {(['ALL', 'ACTIVE', 'IDLE', 'MAINTENANCE'] as const).map(tab => (
+          {(['ALL', 'ACTIVE', 'AVAILABLE', 'MAINTENANCE'] as const).map(tab => (
             <TouchableOpacity
               key={tab}
               style={[styles.filterPill, filter === tab && styles.filterPillActive]}
@@ -63,8 +63,8 @@ export default function CHCFleetScreen() {
         {filteredMachines.map(machine => {
           const isHealthy = machine.healthScore >= 80;
           const statusColor = 
-            machine.status === 'ACTIVE' || machine.status === 'IN_USE' ? '#10b981' :
-            machine.status === 'IDLE' ? '#3b82f6' : '#f59e0b';
+            machine.status === 'ACTIVE' || machine.status === 'DISPATCHED' ? '#10b981' :
+            machine.status === 'AVAILABLE' ? '#3b82f6' : '#f59e0b';
 
           return (
             <View key={machine.id} style={styles.machineCard}>

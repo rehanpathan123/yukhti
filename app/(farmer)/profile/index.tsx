@@ -8,7 +8,7 @@ import { Sprout, User, ShieldCheck, RefreshCw, LogOut } from 'lucide-react-nativ
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { state, updateFarm, clearAllData, loginUser } = useKisanOpsStore();
+  const { state, updateFarm, clearAllData, loginUser, logoutUser } = useKisanOpsStore();
   const { farm, currentUser, agriCredit } = state;
 
   const [isEditing, setIsEditing] = useState(false);

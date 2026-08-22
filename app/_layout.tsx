@@ -26,6 +26,7 @@ function AppNavigator() {
 
   const isInitialLoading = state.isInitialLoading;
   const isLoggedIn = !!state.currentUser?.phoneNumber;
+  const isFarmer = !state.currentUser?.role || state.currentUser?.role === 'FARMER';
   const isFarmConfigured = state.farm?.sizeAcres > 0 && !!state.farm?.district;
 
   useEffect(() => {
@@ -40,18 +41,18 @@ function AppNavigator() {
       if (!inAuthGroup) {
         router.replace('/(auth)/login');
       }
-    } else if (!isFarmConfigured) {
-      // Force onboarding/farm config if farm profile is empty
+    } else if (isFarmer && !isFarmConfigured) {
+      // Force onboarding/farm config only for farmers if farm profile is empty
       if (segs[1] !== 'onboarding') {
         router.replace('/(auth)/onboarding');
       }
     } else {
-      // Logged in and farm profile configured -> head to farmer home
+      // Logged in -> head to main dashboard
       if (inAuthGroup || segs.length === 0) {
         router.replace('/(farmer)');
       }
     }
-  }, [isLoggedIn, isFarmConfigured, isInitialLoading, segments]);
+  }, [isLoggedIn, isFarmConfigured, isFarmer, isInitialLoading, segments]);
 
   if (isInitialLoading) {
     return (

@@ -6,7 +6,7 @@ export class GroqWhisperProvider implements STTProvider {
   private apiKey: string | null;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.VITE_GROQ_API_KEY || null;
+    this.apiKey = apiKey || process.env.EXPO_PUBLIC_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || null;
   }
 
   async transcribe(audio: Blob | ArrayBuffer, filename = 'voice_input.webm'): Promise<TranscriptionResult> {

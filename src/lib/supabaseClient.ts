@@ -2,13 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 import { UserProfile, UserRole } from '../types';
 import { SEEDED_PROFILES } from '../data/seedData';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseUrl = 
+  process.env.EXPO_PUBLIC_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  'https://vrmycvndfylrzuuxjrat.supabase.co';
+
+const supabaseAnonKey = 
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybXljdm5kZnlscnp1dXhqcmF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzMwMjM4NywiZXhwIjoyMTAyODc4Mzg3fQ.OZKmZ9POqfJWU1RW0lDIFlI0FXcTfsEwQtO8Jfte_pE';
 
 export const isSupabaseConfigured = Boolean(
-  process.env.VITE_SUPABASE_URL && 
-  process.env.VITE_SUPABASE_ANON_KEY &&
-  !process.env.VITE_SUPABASE_URL.includes('placeholder')
+  supabaseUrl && 
+  supabaseAnonKey &&
+  !supabaseUrl.includes('placeholder')
 );
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

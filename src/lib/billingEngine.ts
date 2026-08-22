@@ -1,5 +1,7 @@
 import { Booking, Invoice, InvoiceItem } from '../types';
-import jsPDF from 'jspdf';
+import { Platform, Alert } from 'react-native';
+// jsPDF is NOT imported at the top level — it uses latin1/Buffer which crashes Hermes on Android.
+// It is dynamically required inside generatePdfInvoice() only when running on web.
 
 export interface BillingCalculationInput {
   booking: Booking;
@@ -95,9 +97,22 @@ export function calculateFinalInvoice(input: BillingCalculationInput): Invoice {
 }
 
 /**
- * Generates and downloads a clean professional PDF invoice
+ * Generates and downloads a clean professional PDF invoice.
+ * On web: uses jsPDF to download a PDF file.
+ * On Android/iOS: shows an alert (jsPDF is incompatible with Hermes/React Native).
  */
-export function generatePdfInvoice(invoice: Invoice): void {
+export async function generatePdfInvoice(invoice: Invoice): Promise<void> {
+  if (Platform.OS !== 'web') {
+    Alert.alert(
+      '📄 Invoice Ready',
+      `Invoice ${invoice.invoiceNumber} for ₹${invoice.finalTotalAmount} has been recorded. PDF download is available on the web portal.`,
+      [{ text: 'OK' }]
+    );
+    return;
+  }
+
+  // Dynamic import — only executed on web, avoids latin1/Buffer crash on Hermes
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF();
 
   // Header Banner
@@ -151,8 +166,8 @@ export function generatePdfInvoice(invoice: Invoice): void {
   invoice.items.forEach(item => {
     doc.text(item.description, 18, y);
     doc.text(item.quantity.toString(), 125, y);
-    doc.text(`₹${Math.abs(item.unitPrice)}`, 147, y);
-    doc.text(`₹${item.totalPrice}`, 172, y);
+    doc.text(`Rs.${Math.abs(item.unitPrice)}`, 147, y);
+    doc.text(`Rs.${item.totalPrice}`, 172, y);
     y += 8;
   });
 
@@ -163,17 +178,17 @@ export function generatePdfInvoice(invoice: Invoice): void {
   y += 8;
 
   doc.text('Subtotal:', 135, y);
-  doc.text(`₹${invoice.baseRentalAmount + invoice.transportCharge + invoice.fuelSurcharge + invoice.platformFee - invoice.discountAmount}`, 172, y);
+  doc.text(`Rs.${invoice.baseRentalAmount + invoice.transportCharge + invoice.fuelSurcharge + invoice.platformFee - invoice.discountAmount}`, 172, y);
   y += 7;
 
   doc.text('GST (5%):', 135, y);
-  doc.text(`₹${invoice.taxGstAmount}`, 172, y);
+  doc.text(`Rs.${invoice.taxGstAmount}`, 172, y);
   y += 8;
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.text('Final Total:', 135, y);
-  doc.text(`₹${invoice.finalTotalAmount}`, 172, y);
+  doc.text(`Rs.${invoice.finalTotalAmount}`, 172, y);
 
   // Payment Status Box
   y += 18;

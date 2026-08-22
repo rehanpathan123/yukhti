@@ -26,7 +26,8 @@ function AppNavigator() {
 
   const isInitialLoading = state.isInitialLoading;
   const isLoggedIn = !!state.currentUser?.phoneNumber;
-  const isFarmer = !state.currentUser?.role || state.currentUser?.role === 'FARMER';
+  const userRole = state.currentUser?.role || 'FARMER';
+  const isFarmer = userRole === 'FARMER';
   const isFarmConfigured = state.farm?.sizeAcres > 0 && !!state.farm?.district;
 
   useEffect(() => {
@@ -34,7 +35,7 @@ function AppNavigator() {
 
     const segs = segments as any;
     const inAuthGroup = segs[0] === '(auth)';
-    const inFarmerGroup = segs[0] === '(farmer)';
+    const currentGroup = segs[0];
 
     if (!isLoggedIn) {
       // Redirect to login if not authenticated
@@ -42,17 +43,28 @@ function AppNavigator() {
         router.replace('/(auth)/login');
       }
     } else if (isFarmer && !isFarmConfigured) {
-      // Force onboarding/farm config only for farmers if farm profile is empty
+      // Force onboarding only for farmers if farm profile is empty
       if (segs[1] !== 'onboarding') {
         router.replace('/(auth)/onboarding');
       }
     } else {
-      // Logged in -> head to main dashboard
-      if (inAuthGroup || segs.length === 0) {
-        router.replace('/(farmer)');
+      // Logged in -> route to the respective role's dedicated workspace
+      if (userRole === 'CHC_MANAGER') {
+        if (currentGroup !== '(chc)') {
+          router.replace('/(chc)');
+        }
+      } else if (userRole === 'OPERATOR') {
+        if (currentGroup !== '(operator)') {
+          router.replace('/(operator)');
+        }
+      } else {
+        // Farmer
+        if (currentGroup !== '(farmer)' && (inAuthGroup || segs.length === 0)) {
+          router.replace('/(farmer)');
+        }
       }
     }
-  }, [isLoggedIn, isFarmConfigured, isFarmer, isInitialLoading, segments]);
+  }, [isLoggedIn, isFarmConfigured, isFarmer, userRole, isInitialLoading, segments]);
 
   if (isInitialLoading) {
     return (
@@ -79,6 +91,9 @@ function AppNavigator() {
     >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
+      <Stack.Screen name="(chc)" options={{ headerShown: false }} />
+      <Stack.Screen name="(operator)" options={{ headerShown: false }} />
     </Stack>
   );
 }
+

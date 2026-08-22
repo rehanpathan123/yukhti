@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import {
   UserProfile,
   UserRole,
@@ -221,38 +223,44 @@ export function getPopulatedDemoState(): AppState {
   };
 }
 
+// ─── Cross-platform Storage ────────────────────────────────────────────────
+// On web: uses localStorage synchronously.
+// On Android/iOS: uses AsyncStorage with an in-memory sync cache so the
+// existing synchronous getItem() calls still work during a session.
 const memoryStorageMap = new Map<string, string>();
+
 export const storage = {
   getItem: (key: string): string | null => {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      try {
-        return localStorage.getItem(key);
-      } catch (e) {
-        return null;
-      }
+    // Always return from memory cache (populated asynchronously on native)
+    if (Platform.OS === 'web') {
+      try { return localStorage.getItem(key); } catch { return null; }
     }
-    return memoryStorageMap.get(key) || null;
+    return memoryStorageMap.get(key) ?? null;
   },
   setItem: (key: string, value: string): void => {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(key, value);
-        return;
-      } catch (e) {
-        // Ignore quota limits
-      }
-    }
     memoryStorageMap.set(key, value);
+    if (Platform.OS === 'web') {
+      try { localStorage.setItem(key, value); } catch { /* quota */ }
+    } else {
+      AsyncStorage.setItem(key, value).catch(() => { /* silent */ });
+    }
   },
   removeItem: (key: string): void => {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.removeItem(key);
-        return;
-      } catch (e) {}
-    }
     memoryStorageMap.delete(key);
-  }
+    if (Platform.OS === 'web') {
+      try { localStorage.removeItem(key); } catch { /* ignore */ }
+    } else {
+      AsyncStorage.removeItem(key).catch(() => { /* silent */ });
+    }
+  },
+  // Call this once at app boot to hydrate the memory cache from AsyncStorage
+  hydrate: async (): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    try {
+      const saved = await AsyncStorage.getItem(STORAGE_KEY);
+      if (saved) memoryStorageMap.set(STORAGE_KEY, saved);
+    } catch { /* ignore */ }
+  },
 };
 
 function getInitialState(): AppState {
@@ -276,9 +284,35 @@ function getInitialState(): AppState {
   return getCleanProductionState();
 }
 
-let globalState: AppState = getInitialState();
+// On native, start with isInitialLoading: true until AsyncStorage hydrates
+let globalState: AppState = {
+  ...getInitialState(),
+  isInitialLoading: Platform.OS !== 'web',
+};
 const listeners = new Set<() => void>();
 let isInitialized = false;
+
+// Hydrate from AsyncStorage on native before any render
+if (Platform.OS !== 'web') {
+  storage.hydrate().then(() => {
+    const saved = storage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.currentUser) {
+          globalState = { ...parsed, isInitialLoading: false, isDemoLoaded: parsed.isDemoLoaded ?? false };
+        } else {
+          globalState = { ...globalState, isInitialLoading: false };
+        }
+      } catch {
+        globalState = { ...globalState, isInitialLoading: false };
+      }
+    } else {
+      globalState = { ...globalState, isInitialLoading: false };
+    }
+    listeners.forEach(l => l());
+  });
+}
 let simulationTimer: ReturnType<typeof setInterval> | null = null;
 
 function notify() {
@@ -320,8 +354,8 @@ function startGlobalSimulationLoop() {
       },
     };
 
-    // Background sync of telemetry point to Supabase
-    insertLiveTelemetryToDatabase(telemetryPoint);
+    // Background sync of telemetry point to Supabase (silent on mobile)
+    insertLiveTelemetryToDatabase(telemetryPoint).catch(() => { /* silent on Android */ });
 
     // Check if fuel anomaly should inject high-priority alert
     if (nextState.isFuelAnomalyActive) {
@@ -383,37 +417,50 @@ export function useKisanOpsStore() {
   useEffect(() => {
     if (!isInitialized) {
       isInitialized = true;
-      fetchInitialPlatformData().then(cloudData => {
-        globalState = {
-          ...globalState,
-          chcs: cloudData.chcs,
-          machines: cloudData.machines,
-          bookings: cloudData.bookings.length > 0 ? cloudData.bookings : globalState.bookings,
-          maintenanceAlerts: cloudData.maintenanceAlerts,
-          invoices: cloudData.invoices.length > 0 ? cloudData.invoices : globalState.invoices,
-          isCloudSynced: cloudData.isCloudSynced,
-          isInitialLoading: false,
-        };
-        notify();
-      });
 
-      // Realtime listener for cross-tab or remote device updates
-      const sub = subscribeToSupabaseRealtime((event) => {
-        if (event.table === 'bookings' && event.new) {
-          const incoming = event.new;
+      // Fetch initial data — always falls back to seed data if Supabase offline
+      fetchInitialPlatformData()
+        .then(cloudData => {
           globalState = {
             ...globalState,
-            bookings: [
-              incoming,
-              ...globalState.bookings.filter(b => b.id !== incoming.id),
-            ],
+            chcs: cloudData.chcs,
+            machines: cloudData.machines,
+            bookings: cloudData.bookings.length > 0 ? cloudData.bookings : globalState.bookings,
+            maintenanceAlerts: cloudData.maintenanceAlerts,
+            invoices: cloudData.invoices.length > 0 ? cloudData.invoices : globalState.invoices,
+            isCloudSynced: cloudData.isCloudSynced,
+            isInitialLoading: false,
           };
           notify();
-        }
-      });
+        })
+        .catch(() => {
+          // Network unavailable on Android — clear loading and use seed data
+          globalState = { ...globalState, isInitialLoading: false };
+          notify();
+        });
+
+      // Realtime listener — guard against WebSocket errors on mobile
+      let sub: { unsubscribe: () => void } = { unsubscribe: () => {} };
+      try {
+        sub = subscribeToSupabaseRealtime((event) => {
+          if (event.table === 'bookings' && event.new) {
+            const incoming = event.new;
+            globalState = {
+              ...globalState,
+              bookings: [
+                incoming,
+                ...globalState.bookings.filter(b => b.id !== incoming.id),
+              ],
+            };
+            notify();
+          }
+        });
+      } catch {
+        // Realtime not available — silent fallback
+      }
 
       return () => {
-        sub.unsubscribe();
+        try { sub.unsubscribe(); } catch { /* ignore */ }
       };
     }
   }, []);

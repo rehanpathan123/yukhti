@@ -231,7 +231,7 @@ export async function fetchInitialPlatformData(): Promise<{
       isCloudSynced: true,
     };
   } catch (err) {
-    console.warn('Supabase fetch failed, falling back to local dataset:', err);
+    if (__DEV__) console.log('[dbService] Offline mode — using local seed data.');
     return {
       currentUser: SEEDED_PROFILES[0],
       chcs: SEEDED_CHCS,

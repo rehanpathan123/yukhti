@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ function AppNavigator() {
   const { state } = useKisanOpsStore();
   const segments = useSegments();
   const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
 
   const isInitialLoading = state.isInitialLoading;
   const isLoggedIn = !!state.currentUser?.phoneNumber;
@@ -31,40 +32,45 @@ function AppNavigator() {
   const isFarmConfigured = state.farm?.sizeAcres > 0 && !!state.farm?.district;
 
   useEffect(() => {
-    if (isInitialLoading) return;
+    // Crucial: Wait until Expo Router root navigation tree is fully mounted
+    if (!rootNavigationState?.key || isInitialLoading) return;
 
     const segs = segments as any;
     const inAuthGroup = segs[0] === '(auth)';
     const currentGroup = segs[0];
 
-    if (!isLoggedIn) {
-      // Redirect to login if not authenticated
-      if (!inAuthGroup) {
-        router.replace('/(auth)/login');
-      }
-    } else if (isFarmer && !isFarmConfigured) {
-      // Force onboarding only for farmers if farm profile is empty
-      if (segs[1] !== 'onboarding') {
-        router.replace('/(auth)/onboarding');
-      }
-    } else {
-      // Logged in -> route to the respective role's dedicated workspace
-      if (userRole === 'CHC_MANAGER') {
-        if (currentGroup !== '(chc)') {
-          router.replace('/(chc)');
+    const timer = setTimeout(() => {
+      if (!isLoggedIn) {
+        // Redirect to login if not authenticated
+        if (!inAuthGroup) {
+          router.replace('/(auth)/login');
         }
-      } else if (userRole === 'OPERATOR') {
-        if (currentGroup !== '(operator)') {
-          router.replace('/(operator)');
+      } else if (isFarmer && !isFarmConfigured) {
+        // Force onboarding only for farmers if farm profile is empty
+        if (segs[1] !== 'onboarding') {
+          router.replace('/(auth)/onboarding');
         }
       } else {
-        // Farmer
-        if (currentGroup !== '(farmer)' && (inAuthGroup || segs.length === 0)) {
-          router.replace('/(farmer)');
+        // Logged in -> route to the respective role's dedicated workspace
+        if (userRole === 'CHC_MANAGER') {
+          if (currentGroup !== '(chc)') {
+            router.replace('/(chc)');
+          }
+        } else if (userRole === 'OPERATOR') {
+          if (currentGroup !== '(operator)') {
+            router.replace('/(operator)');
+          }
+        } else {
+          // Farmer
+          if (currentGroup !== '(farmer)' && (inAuthGroup || segs.length === 0)) {
+            router.replace('/(farmer)');
+          }
         }
       }
-    }
-  }, [isLoggedIn, isFarmConfigured, isFarmer, userRole, isInitialLoading, segments]);
+    }, 10);
+
+    return () => clearTimeout(timer);
+  }, [isLoggedIn, isFarmConfigured, isFarmer, userRole, isInitialLoading, segments, rootNavigationState?.key]);
 
   if (isInitialLoading) {
     return (

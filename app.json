@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "KisanOps / Yukti",
+    "slug": "kisanops-yukti",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1b4d3e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kisanops.farmer",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app requires microphone access to let you book machinery using voice. / मशीन बुक करने के लिए माइक्रोफोन की अनुमति चाहिए।"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1b4d3e"
+      },
+      "package": "com.kisanops.farmer",
+      "permissions": [
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app requires location access to find nearby agricultural machinery. / आपकी नजदीकी मशीन खोजने के लिए लोकेशन चाहिए।"
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "This app requires microphone access to process voice commands. / आपकी आवाज से मशीन बुक करने के लिए माइक्रोफोन की अनुमति चाहिए।"
+        }
+      ]
+    ],
+    "scheme": "kisanops",
+    "newArchEnabled": true
+  }
+}
